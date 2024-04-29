@@ -99,14 +99,11 @@ We establish $T = \{ T_1, T_2, ..., T_{} \}$ as the set of targets where:
 
 The genesis hash (maximum possible target in the protocol) most significant bit is the 224th, so targets are composed so that a `1` is progressively incremented, starting from the least significant ($T_1$) bit up until the 224th bit ($T_{max}$). So $|T| = 224$.
 
-We establish $K^e = \{ K_{1}^e, K_{2}^e, K_{3}^e, ..., K_{V}^e \}$ as the set of keypairs which are used to create the blind signatures that represent share receipts for each target of $T$. These keypairs are active under the mining epoch $e$. There's a total of $|K^e| = 224$ keypairs.
+The connection between miner $M_x^e$ and pool goes through an initial setup where Miner $M_x^e$ performs a Blind Diffie-Hellmann Key Exchange (BDHKE) with the pool's mint. 
 
-The connection between miner $M_x^e$ and pool goes through an initial setup where:
-- Miner $M_x^e$ submits regular shares (without blind signatures), and after some time, the pool finds an adequate target $T_x \in T$ for optimal bandwidth consumption.
-- Miner waits until new mining epoch $e+1$ begins.
-- Miner $M_x^e$ performs a Blind Diffie-Hellmann Key Exchange (BDHKE) with the pool's mint, where the mint uses the keypair $K_{x}^{e+1}$ that represents $T_x$.
+All shares will be submitted along with blinded messages. This will allow miner to redeem ecash in the future, in case the pool finds a block.
 
-Then, miner $M_x^e$ starts its actual mining activity, where each share $s_{x,j}$ (valid under target $T_x$) is submitted along with a blind message $m_{x,j}$. The pool acknowledges the validity of share $s_{x,j}$.
+The difficulty target for each miner is adjusted dinamically, until it converges to a stable value.
 
 As already established, if the pool finds a block during epoch $e$, it mints a total $\theta_C^e$ ecash sats from the coinbase, and miner $M_x^e$ has the right to claim an ecash sats reward according to:
 
@@ -132,6 +129,8 @@ In case a block is found on the network (by someone else, not the pool), then th
 - never issuing any ecash for past shares
 - discarding shares from db
 
+Also, the miner will discard all secrets and blinding factors they used during epoch $e$, since now they know those are not going to be redeemable for anything in the future.
+
 ## Privacy Limitations
 
 As a requirement for bandwidth optimization (and part of the Stratum protocol), the pool needs to establish individual connections with miners under fixed difficulty targets.
@@ -142,9 +141,7 @@ In case more than one miner has a connection under the same $T_x$ difficulty tar
 
 ## Economic limitations
 
-This is a PPLNS-style reward distribution, which puts the risk on the side of the miner.
-
-
+This reward distribution strategy puts the variance risk on the side of the miner.
 
 ## SV2 protocol extension
 
@@ -162,6 +159,8 @@ These new messages are proposed as an extension to the [Mining Protocol](https:/
 
 The Blind Diffie Hellman Key Exchange (BDHKE) happens via 
 `OpenExtendedEcashMiningChannel*` messages.
+
+todo: check if only these extra messages will be sufficient for BDHKE
 
 Shares are submitted along with blinded messages via `SubmitSharesEcashExtended*` messages.
 
