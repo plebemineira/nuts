@@ -106,7 +106,7 @@ The connection between miner $M_x^e$ and pool goes through an initial setup wher
 - Miner waits until new mining epoch $e+1$ begins.
 - Miner $M_x^e$ performs a Blind Diffie-Hellmann Key Exchange (BDHKE) with the pool's mint, where the mint uses the keypair $K_{x}^{e+1}$ that represents $T_x$.
 
-Then, miner $M_x^e$ starts its actual mining activity, where each share $s_{x,j}$ (valid under target $T_x$) is submitted along with a blind message $m_{x,j}$. The pool acknowledges the validity of share $s_{x,j}$ by sending back a blind signature $b_{x,j}^e$.
+Then, miner $M_x^e$ starts its actual mining activity, where each share $s_{x,j}$ (valid under target $T_x$) is submitted along with a blind message $m_{x,j}$. The pool acknowledges the validity of share $s_{x,j}$.
 
 As already established, if the pool finds a block during epoch $e$, it mints a total $\theta_C^e$ ecash sats from the coinbase, and miner $M_x^e$ has the right to claim an ecash sats reward according to:
 
@@ -116,32 +116,29 @@ where:
 - $S_x^e$ is the set of shares (valid under $T_x$) submitted by miner $M_x^e$ on the last mining epoch $e$.
 - $D_x$ is the difficulty threshold for the connection with miner $M_x^e$, calculated as $D_x = \frac{U256(T_{max})}{U256(T_x)}$
 
-Therefore, each share receipt $b_{x,j}^e$ is priced as:
+Therefore, each share is priced as:
 
-$$ \beta^e (b_{x,j}^e) = \frac{R_x^e}{|S_x^e|} = \frac{D_x}{\sum_{i=1}^{N} |S_i^e|D_i} * \theta_C^e$$
+$$ \beta^e (s_{x,j}^e) = \frac{R_x^e}{|S_x^e|} = \frac{D_x}{\sum_{i=1}^{N} |S_i^e|D_i} * \theta_C^e$$
 
-Anyone can now unblind each share receipt $b_{x,j}^e$ in exchange for $\beta (b_{x,j}^e)$ ecash sats on the mint.
 
-The mint keeps a record of each keypair $K_{e,x}$ until all share receipts $b_{x,j}^e$ have been redeemed for ecash. From this point onwards, there's no need to keep a record of keypair $K_{x}^e$ anymore, so the mint safely erases it from storage.
 
 The ecash supply coming from the coinbase is $\theta_C^e$, and we keep this supply fixed as:
 
-$$ \theta_C^e = \sum_{j}^{} \sum_{i}^{} \beta(b^e_{i,j})$$
+$$ \theta_C^e = \sum_{j}^{} \sum_{i}^{} \beta(s^e_{i,j})$$
 
-Where $b^e_{i,j}$ is the set of all share receipts signed by the mint during epoch $e$.
+Where $s^e_{i,j}$ is the set of all share receipts signed by the pool/mint during epoch $e$.
 
 In case a block is found on the network (by someone else, not the pool), then the pool starts a new mining epoch $e+1$ by:
-- discarding all keypairs under the set $K^e$ (making every share submitted under past epoch $e$ unredeemable)
-- creating a new set of keypairs $K^{e+1}$
-- performing a new BDHKE with all miners, where each channel uses key $K_x^{e+1}$ representing target $T_x$
+- never issuing any ecash for past shares
+- discarding shares from db
 
 ## Privacy Limitations
 
 As a requirement for bandwidth optimization (and part of the Stratum protocol), the pool needs to establish individual connections with miners under fixed difficulty targets.
 
-If there's only one single miner under target $T_x$, then every share receipt $b_{x,j}^e$ is signed by the same keypair $K^e_x$ under epoch $e$, which can be traced back to this specific miner.
+If there's only one single miner under target $T_x$, then every share $s_{x,j}^e$ can be traced back to this specific miner.
 
-In case more than one miner has a connection under the same $T_x$ difficulty target, then the annonimty set for share receipts signed under keypair $K^e_x$ grows, and this issue is partially mitigated.
+In case more than one miner has a connection under the same $T_x$ difficulty target, then the annonimty set grows, and this issue is partially mitigated.
 
 ## Economic limitations
 
