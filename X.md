@@ -5,14 +5,14 @@ NUT-X:
 
 ---
 
-This NUT describes a mechanism for share accounting based on blind signatures, to be used by Bitcoin mining pools. The mining pool is also an ecash mint. Miners submit shares along with blinded messages, and receive blind signatures as a receipt. After the block is found by the pool, miners swap these share receipts for ecash, while shares are priced proportionally to:
+This NUT describes a mechanism for reward distribution based on blind signatures, to be used by Bitcoin mining pools. The mining pool is also an ecash mint. Miners submit shares along with blinded messages. After the block is found by the pool, miner get paid (per share) in ecash, while shares are priced proportionally to:
 - the total coinbase reward
 - the share's difficulty target
 - the total pooled hashrate
 
 This proposal aims to provide a pool architecture that:
 - caters for small miners, which can combine their hashrate (as an alternative to solo/lottery), get some sats-backed ecash in return for each block the pool finds, and easily withdraw their rewards via LN (after they accumulate enough ecash to cover fees)
-- minimize the trust between pool and miner via blind signatures acting as share receipts
+- minimize the trust between pool and miner (pool blindly exchanges shares for ecash)
 
 ## Hashrate estimation
 
@@ -86,7 +86,7 @@ The reward distribution is:
 - $R_A^e + R_B^e + R_C^e = \theta_C^e$
 
 
-## Blind-signatures as share receipts
+## Pricing shares
 
 We establish $T = \{ T_1, T_2, ..., T_{} \}$ as the set of targets where:
 - $T_1$ = `"0x0000000000000000000000000000000000000000000000000000000000000001"`
@@ -137,7 +137,7 @@ In case a block is found on the network (by someone else, not the pool), then th
 
 ## Privacy Limitations
 
-As a requirement for bandwidth optimization, the pool needs to establish individual connections with miners under fixed difficulty targets.
+As a requirement for bandwidth optimization (and part of the Stratum protocol), the pool needs to establish individual connections with miners under fixed difficulty targets.
 
 If there's only one single miner under target $T_x$, then every share receipt $b_{x,j}^e$ is signed by the same keypair $K^e_x$ under epoch $e$, which can be traced back to this specific miner.
 
@@ -145,19 +145,36 @@ In case more than one miner has a connection under the same $T_x$ difficulty tar
 
 ## Economic limitations
 
-Within the context of mining, every delay incurs in economic penalties.
+This is a PPLNS-style reward distribution, which puts the risk on the side of the miner.
 
-Whenever a new epoch starts (a new block was found in the network), the pool rotates all keys in $K$, so that share receipts from different epochs are signed under different keys. As a consequence, all miners need to perform BDHKE again, before they start mining against the new block.
 
-The delay incurred by this BDHKE means that the entire pool lost a few precious seconds when it's starting to mine on a new block (in comparison to the rest of the network).
 
 ## SV2 protocol extension
 
-BDHKE and management of share receipts is done by mining proxy.
+The `StratumV2` protocol allows for [Protocol Extensions](https://stratumprotocol.org/specification/09-Extensions/)
 
-todo
+These new messages are proposed as an extension to the [Mining Protocol](https://stratumprotocol.org/specification/05-Mining-Protocol/):
+- `OpenExtendedEcashMiningChannel` (Client -> Server)
+- `OpenExtendedEcashMiningChannel.Success` (Server -> Client)
+- `SubmitSharesEcashExtended` (Client -> Server)
+- `SubmitSharesEcashExtented.Success` (Server -> Client)
+- `SubmitSharesEcashExtended.Error` (Server -> Client)
+- `RedeemSharesEcash` (Client -> Server)
+- `RedeemSharesEcash.Success` (Server -> Client)
+- `RedeemSharesEcash.Error` (Server -> Client)
+
+The Blind Diffie Hellman Key Exchange (BDHKE) happens via 
+`OpenExtendedEcashMiningChannel*` messages.
+
+Shares are submitted along with blinded messages via `SubmitSharesEcashExtended*` messages.
+
+Once the block is found, miner redeems their ecash (the blinded signatures) (1 for each share) via `RedeemSharesEcash*`.
+
+This could be some functionality added to the proxy role (SV2+Translator).
 
 ## APIs
+
+todo
 
 ## References
 
